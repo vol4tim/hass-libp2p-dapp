@@ -46,8 +46,11 @@ export default {
 
     const connect = async () => {
       try {
+        console.log("11", addr.value);
         const listenerMultiaddr = multiaddr(addr.value);
+        console.log("22", listenerMultiaddr.toString());
         connection = await node.dial(listenerMultiaddr);
+        console.log("33", connection.status);
         console.log(connection.remoteAddr.toString(), connection.status);
       } catch (error) {
         console.log(error);

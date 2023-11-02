@@ -1,5 +1,5 @@
 import { noise } from "@chainsafe/libp2p-noise";
-import { yamux } from "@chainsafe/libp2p-yamux";
+// import { yamux } from "@chainsafe/libp2p-yamux";
 import { mplex } from "@libp2p/mplex";
 import { webRTC } from "@libp2p/webrtc";
 import { webSockets } from "@libp2p/websockets";
@@ -25,7 +25,7 @@ export const createNode = async () => {
         discoverRelays: 1
       })
     ],
-    streamMuxers: [yamux(), mplex()],
+    streamMuxers: [mplex()],
     connectionEncryption: [noise()],
     services: {
       identify: identifyService()
@@ -36,6 +36,30 @@ export const createNode = async () => {
       }
     }
   });
+
+  node.addEventListener("self:peer:update", () => {
+    // Update multiaddrs list
+    const multiaddrs = node.getMultiaddrs().map((ma) => {
+      return ma.toString();
+    });
+    console.log("Update multiaddrs list", multiaddrs);
+  });
+
+  function updateConnList() {
+    // Update connections list
+    const connListEls = node.getConnections().map((connection) => {
+      return connection.remoteAddr.toString();
+    });
+    console.log("Update Conn List", connListEls);
+  }
+
+  node.addEventListener("connection:open", () => {
+    updateConnList();
+  });
+  node.addEventListener("connection:close", () => {
+    updateConnList();
+  });
+
   return node;
 };
 
