@@ -68,7 +68,7 @@ export async function request(connection, topic, data) {
   if (connection.status !== "open") {
     return;
   }
-  console.log(2);
+  console.log("eee", connection.remoteAddr.toString());
   const stream = await connection.newStream([topic], {
     runOnTransientConnection: true
   });
