@@ -46,7 +46,7 @@ export async function request(connection, topic, data) {
   }
   console.log(2);
   const stream = await connection.newStream([topic], {
-    // runOnTransientConnection: true
+    runOnTransientConnection: true
   });
   console.log(3);
   return pipe(
