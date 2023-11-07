@@ -38,7 +38,6 @@ export const createNode = async () => {
   });
 
   node.addEventListener("self:peer:update", () => {
-    // Update multiaddrs list
     const multiaddrs = node.getMultiaddrs().map((ma) => {
       return ma.toString();
     });
@@ -46,11 +45,10 @@ export const createNode = async () => {
   });
 
   function updateConnList() {
-    // Update connections list
-    const connListEls = node.getConnections().map((connection) => {
+    const connList = node.getConnections().map((connection) => {
       return connection.remoteAddr.toString();
     });
-    console.log("Update Conn List", connListEls);
+    console.log("Update Conn List", connList);
   }
 
   node.addEventListener("connection:open", () => {
@@ -64,15 +62,12 @@ export const createNode = async () => {
 };
 
 export async function request(connection, topic, data) {
-  console.log(1);
   if (connection.status !== "open") {
     return;
   }
-  console.log("eee", connection.remoteAddr.toString());
   const stream = await connection.newStream([topic], {
     runOnTransientConnection: true
   });
-  console.log(3);
   return pipe(
     [uint8ArrayFromString(JSON.stringify(data))],
     stream,
@@ -89,3 +84,33 @@ export async function request(connection, topic, data) {
     }
   );
 }
+
+export const getRequest = async (stream) => {
+  return pipe(stream, async function (source) {
+    let result = "";
+    for await (const data of source) {
+      result += uint8ArrayToString(data.subarray());
+    }
+    return JSON.parse(result);
+  });
+};
+
+export const sendResponse = async (stream, msg) => {
+  return pipe([uint8ArrayFromString(JSON.stringify(msg))], stream.sink).finally(
+    () => {
+      stream.close();
+    }
+  );
+};
+
+export const handle = (node, topic, fn) => {
+  return node.handle(
+    topic,
+    async ({ stream }) => {
+      fn(await getRequest(stream), stream);
+    },
+    {
+      runOnTransientConnection: true
+    }
+  );
+};

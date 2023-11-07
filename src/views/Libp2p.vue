@@ -13,6 +13,12 @@
           <robo-input label="Call" v-model="command" />
           <robo-button block @click="send">send</robo-button>
           <robo-text highlight="attention">{{ response }}</robo-text>
+          <div>
+            <h3>Log</h3>
+            <robo-text v-for="(item, k) in log" :key="k" highlight="attention">
+              {{ k }}. {{ item }}
+            </robo-text>
+          </div>
         </robo-grid-item>
       </robo-grid>
     </robo-section>
@@ -21,17 +27,19 @@
 
 <script>
 import { multiaddr } from "@multiformats/multiaddr";
-import { ref } from "vue";
-import { createNode, request } from "../utils/libp2p";
+import { reactive, ref } from "vue";
+import { createNode, handle, request, sendResponse } from "../utils/libp2p";
 
 export default {
   setup() {
     const addr = ref(
       "/ip4/127.0.0.1/tcp/10333/ws/p2p/QmcrQZ6RJdpYuGvZqD5QEHAv6qX4BrQLJLQPQUrTrzdcgm"
+      // "/dns4/vol4.work.gd/tcp/443/wss/p2p/12D3KooWEmZfGh3HEy7rQPKZ8DpJRYfFcbULN97t3hGwkB5xPmjn/p2p-circuit/p2p/12D3KooWLK5cFWH47W16TKVdeyUvwey8GxYUG9TtpJ91gSaiQWJc"
     );
     const status = ref(false);
     const command = ref(JSON.stringify({ device: "id1", command: "on" }));
     const response = ref("");
+    const log = reactive([]);
     let node;
     let connection;
 
@@ -42,16 +50,19 @@ export default {
     (async () => {
       node = await createNode();
       await node.start();
+      console.log(`Node started with id ${node.peerId.toString()}`);
+
+      handle(node, "/update", async (msg, stream) => {
+        console.log("command", msg);
+        log.push(JSON.stringify(msg));
+        await sendResponse(stream, { result: true });
+      });
     })();
 
     const connect = async () => {
       try {
-        console.log("11", addr.value);
         const listenerMultiaddr = multiaddr(addr.value);
-        console.log("22", listenerMultiaddr.toString());
         connection = await node.dial(listenerMultiaddr);
-        console.log("33", connection.status);
-        console.log(connection.remoteAddr.toString(), connection.status);
       } catch (error) {
         console.log(error);
       }
@@ -80,7 +91,7 @@ export default {
       response.value = await request(connection, "/call", call);
     };
 
-    return { addr, status, command, response, connect, disconnect, send };
+    return { addr, status, command, response, connect, disconnect, send, log };
   }
 };
 </script>
