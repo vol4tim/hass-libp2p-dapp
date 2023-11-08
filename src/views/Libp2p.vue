@@ -27,19 +27,19 @@
 
 <script>
 import { multiaddr } from "@multiformats/multiaddr";
-import { reactive, ref } from "vue";
+import { ref } from "vue";
 import { createNode, handle, request, sendResponse } from "../utils/libp2p";
 
 export default {
   setup() {
     const addr = ref(
-      "/ip4/127.0.0.1/tcp/10333/ws/p2p/QmcrQZ6RJdpYuGvZqD5QEHAv6qX4BrQLJLQPQUrTrzdcgm"
-      // "/dns4/vol4.work.gd/tcp/443/wss/p2p/12D3KooWEmZfGh3HEy7rQPKZ8DpJRYfFcbULN97t3hGwkB5xPmjn/p2p-circuit/p2p/12D3KooWLK5cFWH47W16TKVdeyUvwey8GxYUG9TtpJ91gSaiQWJc"
+      // "/ip4/127.0.0.1/tcp/10333/ws/p2p/QmcrQZ6RJdpYuGvZqD5QEHAv6qX4BrQLJLQPQUrTrzdcgm"
+      "/dns4/vol4.work.gd/tcp/443/wss/p2p/12D3KooWEmZfGh3HEy7rQPKZ8DpJRYfFcbULN97t3hGwkB5xPmjn/p2p-circuit/p2p/12D3KooWLK5cFWH47W16TKVdeyUvwey8GxYUG9TtpJ91gSaiQWJc"
     );
     const status = ref(false);
     const command = ref(JSON.stringify({ device: "id1", command: "on" }));
     const response = ref("");
-    const log = reactive([]);
+    const log = ref([]);
     let node;
     let connection;
 
@@ -51,18 +51,19 @@ export default {
       node = await createNode();
       await node.start();
       console.log(`Node started with id ${node.peerId.toString()}`);
-
-      handle(node, "/update", async (msg, stream) => {
-        console.log("command", msg);
-        log.push(JSON.stringify(msg));
-        await sendResponse(stream, { result: true });
-      });
     })();
 
     const connect = async () => {
       try {
+        console.log("connect");
         const listenerMultiaddr = multiaddr(addr.value);
         connection = await node.dial(listenerMultiaddr);
+        console.log("ok");
+        handle(node, "/update", async (msg, stream) => {
+          console.log("command", msg);
+          log.value.push(JSON.stringify(msg));
+          await sendResponse(stream, { result: true });
+        });
       } catch (error) {
         console.log(error);
       }
@@ -71,6 +72,8 @@ export default {
 
     const disconnect = async () => {
       try {
+        log.value = [];
+        node.unhandle("/update");
         await connection.close();
       } catch (error) {
         console.log(error);
