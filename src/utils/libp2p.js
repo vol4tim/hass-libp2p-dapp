@@ -22,7 +22,7 @@ export const createNode = async () => {
       }),
       webRTC(),
       circuitRelayTransport({
-        discoverRelays: 1
+        // discoverRelays: 1
       })
     ],
     streamMuxers: [mplex()],
@@ -46,6 +46,7 @@ export const createNode = async () => {
 
   function updateConnList() {
     const connList = node.getConnections().map((connection) => {
+      console.log(connection.id.toString());
       return connection.remoteAddr.toString();
     });
     console.log("Update Conn List", connList);

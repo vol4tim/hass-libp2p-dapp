@@ -13,11 +13,11 @@
           <robo-input label="Call" v-model="command" />
           <robo-button block @click="send">send</robo-button>
           <robo-text highlight="attention">{{ response }}</robo-text>
-          <div>
-            <h3>Log</h3>
-            <robo-text v-for="(item, k) in log" :key="k" highlight="attention">
-              {{ k }}. {{ item }}
-            </robo-text>
+          <div v-if="ha">
+            <h3>Data</h3>
+            <div>
+              <pre><code>{{ ha }}</code></pre>
+            </div>
           </div>
         </robo-grid-item>
       </robo-grid>
@@ -37,9 +37,9 @@ export default {
       "/dns4/vol4.work.gd/tcp/443/wss/p2p/12D3KooWEmZfGh3HEy7rQPKZ8DpJRYfFcbULN97t3hGwkB5xPmjn/p2p-circuit/p2p/12D3KooWLK5cFWH47W16TKVdeyUvwey8GxYUG9TtpJ91gSaiQWJc"
     );
     const status = ref(false);
-    const command = ref(JSON.stringify({ device: "id1", command: "on" }));
+    const command = ref(JSON.stringify({ device: "lamp", state: "on" }));
     const response = ref("");
-    const log = ref([]);
+    const ha = ref(null);
     let node;
     let connection;
 
@@ -55,13 +55,10 @@ export default {
 
     const connect = async () => {
       try {
-        console.log("connect");
         const listenerMultiaddr = multiaddr(addr.value);
         connection = await node.dial(listenerMultiaddr);
-        console.log("ok");
         handle(node, "/update", async (msg, stream) => {
-          console.log("command", msg);
-          log.value.push(JSON.stringify(msg));
+          ha.value = msg;
           await sendResponse(stream, { result: true });
         });
       } catch (error) {
@@ -72,7 +69,7 @@ export default {
 
     const disconnect = async () => {
       try {
-        log.value = [];
+        ha.value = null;
         node.unhandle("/update");
         await connection.close();
       } catch (error) {
@@ -94,7 +91,16 @@ export default {
       response.value = await request(connection, "/call", call);
     };
 
-    return { addr, status, command, response, connect, disconnect, send, log };
+    return {
+      addr,
+      status,
+      command,
+      response,
+      connect,
+      disconnect,
+      send,
+      ha
+    };
   }
 };
 </script>
