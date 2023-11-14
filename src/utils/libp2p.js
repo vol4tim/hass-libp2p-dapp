@@ -34,6 +34,9 @@ export const createNode = async () => {
       denyDialMultiaddr: () => {
         return false;
       }
+    },
+    connectionManager: {
+      minConnections: 0
     }
   });
 
@@ -46,7 +49,6 @@ export const createNode = async () => {
 
   function updateConnList() {
     const connList = node.getConnections().map((connection) => {
-      console.log(connection.id.toString());
       return connection.remoteAddr.toString();
     });
     console.log("Update Conn List", connList);
@@ -92,7 +94,14 @@ export const getRequest = async (stream) => {
     for await (const data of source) {
       result += uint8ArrayToString(data.subarray());
     }
-    return JSON.parse(result);
+    try {
+      return JSON.parse(result);
+    } catch (error) {
+      console.log(error);
+      console.log("result", result);
+      console.log("length", result.length);
+      return result;
+    }
   });
 };
 
